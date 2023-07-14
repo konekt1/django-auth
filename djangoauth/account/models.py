@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
+from django.core.validators import MaxLengthValidator
 
 # custom user manager
 STATE_CHOICES = (
@@ -69,7 +70,7 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, name, password=None):
+    def create_superuser(self, email, first_name, last_name, phone_number, current_location, intern_category, password=None):
         """
         Creates and saves a superuser with the given email, name
         and password.
@@ -77,7 +78,11 @@ class UserManager(BaseUserManager):
         user = self.create_user(
             email,
             password=password,
-            name=name,
+            first_name=first_name,
+            last_name=last_name,
+            phone_number=phone_number,
+            current_location=current_location,
+            intern_category=intern_category,
         )
         user.is_admin = True
         user.save(using=self._db)
@@ -122,3 +127,42 @@ class User(AbstractBaseUser):
         "Is the user a member of staff?"
         # Simplest possible answer: All admin users are staff
         return self.is_admin
+    
+ABOUT_CHOICE = (
+    ('Word of mouth', 'Word of mouth'),
+    ('Facebook', 'Facebook'),
+    ('Linkedin', 'Linkedin'),
+    ('Reddit', 'Reddit'),
+    ('AD', 'AD'),
+)
+
+ESTABLISHED_CHOICE = (
+    ('2023', '2023'),
+    ('2022', '2022'),
+    ('2021', '2021'),
+    ('2020', '2020'),
+    ('2019', '2019'),
+    ('2018', '2018'),
+)
+
+SIZE_CHOICE = (
+    ('1-50', '1-50'),
+    ('51-100', '51-100'),
+    ('100-1000', '100-1000'),
+    ('1000-5000', '1000-5000'),
+    ('<5000', '<5000'),
+    
+)
+
+
+
+class Recruiter(models.Model):
+    company_size = models.CharField(choices=SIZE_CHOICE, max_length=100, default="Company Size")
+    established_year = models.CharField(choices=ESTABLISHED_CHOICE, max_length=100, default="Established Year")
+    company_website = models.CharField(default="Enter Website Name", max_length=100)
+    company_url = models.CharField(default="Enter Websiter URL", max_length=100)
+    company_mission = models.TextField(default=None, validators=[MaxLengthValidator(500)])
+    about_us = models.CharField(choices=ABOUT_CHOICE, max_length=100, default="Select")
+
+
+    
