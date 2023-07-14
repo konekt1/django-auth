@@ -1,6 +1,7 @@
 from django.contrib import admin
 from account.models import User
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from .models import Recruiter
 
 class UserModelAdmin(BaseUserAdmin):
     # The fields to be used in displaying the User model.
@@ -31,3 +32,10 @@ class UserModelAdmin(BaseUserAdmin):
 
 # Now register the new UserModelAdmin...
 admin.site.register(User, UserModelAdmin)
+
+
+class RecruiterAdmin(admin.ModelAdmin):
+    list_display = ('company_size', 'established_year', 'company_website', 'company_url')
+    fields = ('company_size', 'established_year', 'company_website', 'company_url', 'company_mission', 'about_us')
+
+admin.site.register(Recruiter, RecruiterAdmin)
