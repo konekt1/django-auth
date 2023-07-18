@@ -13,6 +13,7 @@ class UserModelAdmin(BaseUserAdmin):
         ('User Credentials', {"fields": ["email", "password"]}),
         ("Personal info", {"fields": ["first_name", "last_name", "phone_number", "current_location", "intern_category"]}),
         ("Permissions", {"fields": ["is_admin"]}),
+        ('OTP', {'fields': ('otp',)}),
     ]
     # add_fieldsets is not a standard ModelAdmin attribute. UserAdmin
     # overrides get_fieldsets to use this attribute when creating a user.
@@ -21,7 +22,7 @@ class UserModelAdmin(BaseUserAdmin):
             None,
             {
                 "classes": ["wide"],
-                "fields": ["first_name", "last_name", "email", "phone_number", "password1", "password2", "current_location", "intern_category"],
+                "fields": ["first_name", "last_name", "email", "phone_number", "password1", "password2", "current_location", "intern_category", "otp"],
             },
         ),
     ]
