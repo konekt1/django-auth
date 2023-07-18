@@ -1,0 +1,3 @@
+## django-auth
+# An authentication api for Konekt users
+README coming soon .....
