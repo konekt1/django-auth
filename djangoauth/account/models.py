@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 from django.core.validators import MaxLengthValidator
+from django.contrib.auth.models import AbstractUser
+
 
 # custom user manager
 STATE_CHOICES = (
@@ -103,11 +105,19 @@ class User(AbstractBaseUser):
     is_admin = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    otp = models.IntegerField(null=True, blank=True)
 
     objects = UserManager()
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["first_name", "last_name", "phone_number", "current_location", "intern_category"]
+
+    def save_otp(self, otp):
+        self.otp = otp
+        self.save()
+
+    def compare_otp(self, otp):
+        return self.otp == otp
 
     def __str__(self):
         return self.email
@@ -153,7 +163,6 @@ SIZE_CHOICE = (
     ('<5000', '<5000'),
     
 )
-
 
 
 class Recruiter(models.Model):
