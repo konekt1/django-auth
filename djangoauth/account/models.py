@@ -1,7 +1,8 @@
 from django.db import models
-from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 from django.core.validators import MaxLengthValidator
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, PermissionsMixin
+from .manager import UserManager
+import uuid
 
 
 # custom user manager
@@ -50,58 +51,20 @@ INTERN_CHOICE = (
     ('Looking to change fields', 'Looking to change fields'),
 )
 
-class UserManager(BaseUserManager):
-    def create_user(self, email, first_name, last_name, phone_number, current_location, intern_category, password=None, confirm_password=None):
-        """
-        Creates and saves a User with the given email, name
-        and password.
-        """
-        if not email:
-            raise ValueError("User must have an email address")
+class User(AbstractUser, PermissionsMixin):
 
-        user = self.model(
-            email=self.normalize_email(email),
-            first_name=first_name,
-            last_name=last_name,
-            phone_number=phone_number,
-            current_location=current_location,
-            intern_category=intern_category,
-        )
-
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
-
-    def create_superuser(self, email, first_name, last_name, phone_number, current_location, intern_category, password=None):
-        """
-        Creates and saves a superuser with the given email, name
-        and password.
-        """
-        user = self.create_user(
-            email,
-            password=password,
-            first_name=first_name,
-            last_name=last_name,
-            phone_number=phone_number,
-            current_location=current_location,
-            intern_category=intern_category,
-        )
-        user.is_admin = True
-        user.save(using=self._db)
-        return user
-
-class User(AbstractBaseUser):
-    email = models.EmailField(
-        verbose_name="Email",
-        max_length=255,
-        unique=True,
+    USER_ROLE = (
+        ('intern', 'Intern'),
+        ('recruiter', 'Recruiter'),
     )
-    first_name = models.CharField(max_length=200)
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    username = None
+    email = models.EmailField(unique=True)
+    first_name = models.CharField(max_length=200, null=True)
     last_name = models.CharField(max_length=100, null=True)
-    phone_number = models.IntegerField(default=None, null=True)
-    current_location = models.CharField(choices=STATE_CHOICES, max_length=100, default='Abia')
-    intern_category = models.CharField(choices=INTERN_CHOICE, max_length=100, default='About to graduate')
-    is_active = models.BooleanField(default=True)
+    role = models.CharField(max_length=12, choices=USER_ROLE,  null=True, blank=True)
+    is_verified = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -110,11 +73,12 @@ class User(AbstractBaseUser):
     objects = UserManager()
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["first_name", "last_name", "phone_number", "current_location", "intern_category"]
+    REQUIRED_FIELDS = ["first_name", "last_name", "role"]
 
     def save_otp(self, otp):
         self.otp = otp
         self.save()
+
 
     def compare_otp(self, otp):
         return self.otp == otp
@@ -122,21 +86,22 @@ class User(AbstractBaseUser):
     def __str__(self):
         return self.email
 
-    def has_perm(self, perm, obj=None):
-        "Does the user have a specific permission?"
-        # Simplest possible answer: Yes, always
-        return self.is_admin
+    is_staff = models.BooleanField(
+        default=False,  # You can set this to True if you want staff members by default
+        help_text='Designates whether the user can log into this admin site.'
+    )
+    
+    is_verified = models.BooleanField(
+        default=False,
+        help_text='Designates whether the user is verified.'
+    )
+    
+    objects = UserManager()
 
-    def has_module_perms(self, app_label):
-        "Does the user have permissions to view the app `app_label`?"
-        # Simplest possible answer: Yes, always
-        return True
-
-    @property
-    def is_staff(self):
-        "Is the user a member of staff?"
-        # Simplest possible answer: All admin users are staff
-        return self.is_admin
+    # Override is_staff setter if necessary
+    def set_staff_status(self, value):
+        self.is_staff = value
+        self.save()
     
 ABOUT_CHOICE = (
     ('Word of mouth', 'Word of mouth'),
@@ -165,13 +130,19 @@ SIZE_CHOICE = (
 )
 
 
-class Recruiter(models.Model):
+
+class InternProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    phone_number = models.IntegerField(default=None, null=True)
+    current_location = models.CharField(choices=STATE_CHOICES, max_length=100, default='Abia')
+    intern_category = models.CharField(choices=INTERN_CHOICE, max_length=100, default='About to graduate')
+
+
+class RecruiterProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, null=False)
     company_size = models.CharField(choices=SIZE_CHOICE, max_length=100, default="Company Size")
     established_year = models.CharField(choices=ESTABLISHED_CHOICE, max_length=100, default="Established Year")
     company_website = models.CharField(default="Enter Website Name", max_length=100)
     company_url = models.CharField(default="Enter Websiter URL", max_length=100)
-    company_mission = models.TextField(default=None, validators=[MaxLengthValidator(500)])
+    company_mission = models.TextField(default=None, validators=[MaxLengthValidator(500)], null=True)
     about_us = models.CharField(choices=ABOUT_CHOICE, max_length=100, default="Select")
-
-
-    
